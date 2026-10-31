@@ -54,9 +54,10 @@ object Http {
 
     /**
      * Apps Script web apps run the script on the POST and then answer with a 302 to
-     * googleusercontent.com, so a redirect counts as success and is not followed.
+     * googleusercontent.com, where the script's output can be fetched with a GET. Returns
+     * that output (or the direct response body), or "" if the redirect can't be read.
      */
-    suspend fun postJson(url: String, body: String) = withContext(Dispatchers.IO) {
+    suspend fun postJson(url: String, body: String): String = withContext(Dispatchers.IO) {
         val conn = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             doOutput = true
@@ -66,13 +67,18 @@ object Http {
             setRequestProperty("User-Agent", USER_AGENT)
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
         }
+        val location: String?
         try {
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
             val code = conn.responseCode
             if (code !in 200..399) throw HttpException(code)
+            if (code in 200..299) return@withContext conn.inputStream.bufferedReader().use { it.readText() }
+            location = conn.getHeaderField("Location")
         } finally {
             conn.disconnect()
         }
+        // The POST already ran the script; failing to read its reply isn't a sync failure.
+        location?.let { runCatching { get(it) }.getOrNull() }.orEmpty()
     }
 
     fun encode(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")

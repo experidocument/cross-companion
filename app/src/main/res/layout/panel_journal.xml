@@ -7,54 +7,42 @@
     android:paddingHorizontal="@dimen/sheet_padding"
     android:paddingTop="@dimen/sheet_padding">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/webhookLayout"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/webhook_label"
-        app:endIconMode="clear_text">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/webhookInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:imeOptions="actionDone"
-            android:inputType="textUri"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/saveWebhook"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/save" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/guideButton"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:text="@string/setup_guide" />
-
-        <Space
+        <TextView
+            android:id="@+id/summary"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAppearance="@style/TextAppearance.CrossCompanion.Label" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/exportButton"
+            android:id="@+id/syncAllButton"
             style="@style/Widget.Material3.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/export_journal" />
+            android:text="@string/sync_all" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/addCategoryButton"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:contentDescription="@string/add_category"
+            app:icon="@drawable/ic_add" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/settingsButton"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/doc_settings"
+            app:icon="@drawable/ic_settings" />
     </LinearLayout>
 
     <TextView

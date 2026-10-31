@@ -14,9 +14,9 @@ data class LookupResult(
     val sourceUrl: String?,
     val related: List<String>,
 ) {
-    fun toEntry() = JournalEntry(
+    fun toEntry(categoryLabel: String = category) = JournalEntry(
         term = term,
-        category = category,
+        category = categoryLabel,
         trivia = summary,
         etymology = etymology,
         usage = usage,
@@ -60,7 +60,7 @@ object WordLookup {
 
         if (wiki == null && dict?.definition == null) {
             return@coroutineScope if (related.isEmpty()) null
-            else LookupResult(query, "General", "", null, null, null, related)
+            else LookupResult(query, Categories.GENERAL.label, "", null, null, null, related)
         }
 
         val summary = buildString {
@@ -77,7 +77,7 @@ object WordLookup {
 
         LookupResult(
             term = displayTerm,
-            category = categorize(wiki?.description, wiki?.extract, hasDictionary = dict?.definition != null),
+            category = Categories.detect(wiki?.description, wiki?.extract, hasDictionary = dict?.definition != null).label,
             summary = summary,
             etymology = etymology,
             usage = dict?.example,
@@ -151,37 +151,5 @@ object WordLookup {
             .lineSequence().firstOrNull { it.isNotBlank() }
             ?.take(400)
             ?.takeIf { it.length > 8 }
-    }
-
-    private val CATEGORIES = linkedMapOf(
-        "Geography" to listOf("city", "country", "capital", "river", "mountain", "island", "lake", "state of",
-            "province", "region", "town", "village", "ocean", "sea", "desert", "county", "peninsula", "volcano"),
-        "Food" to listOf("dish", "food", "cuisine", "fruit", "vegetable", "beverage", "drink", "cheese", "sauce",
-            "dessert", "bread", "pastry", "spice", "herb", "cocktail", "wine", "soup"),
-        "Arts" to listOf("film", "novel", "singer", "band", "album", "painter", "actor", "actress", "song",
-            "opera", "poet", "artist", "musician", "composer", "television", "play by", "sculptor", "rapper",
-            "character", "comic", "video game", "author", "writer", "ballet"),
-        "Sports" to listOf("footballer", "basketball", "baseball", "athlete", "sport", "tennis", "olympic",
-            "cricketer", "team", "golfer", "boxer", "hockey"),
-        "Science" to listOf("chemical", "element", "species", "genus", "physics", "biology", "mineral", "disease",
-            "planet", "star", "compound", "mammal", "bird", "fish", "insect", "plant", "unit of", "molecule",
-            "astronomy", "mathemat", "anatomy", "reptile"),
-        "History" to listOf("war", "empire", "dynasty", "battle", "emperor", "king of", "queen of", "pharaoh",
-            "ancient", "revolution", "medieval"),
-        "Mythology & Religion" to listOf("god", "goddess", "myth", "deity", "religio", "biblical", "saint", "legend"),
-        "Language" to listOf("language", "alphabet", "letter", "abbreviation", "prefix", "suffix", "idiom", "phrase"),
-        "People" to listOf("politician", "businessman", "businesswoman", "philosopher", "scientist", "inventor",
-            "president", "prime minister", "born"),
-    )
-
-    private fun categorize(description: String?, extract: String?, hasDictionary: Boolean): String {
-        // The short description ("Capital of France") is the strongest signal, so check it first.
-        listOfNotNull(description, extract?.take(300)).forEach { text ->
-            val lower = text.lowercase()
-            CATEGORIES.forEach { (name, words) ->
-                if (words.any { Regex("\\b${Regex.escape(it)}").containsMatchIn(lower) }) return name
-            }
-        }
-        return if (hasDictionary) "Vocabulary" else "General"
     }
 }

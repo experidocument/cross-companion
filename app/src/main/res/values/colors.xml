@@ -13,4 +13,8 @@
     <color name="danger">#C62828</color>
     <color name="dot_inactive">#C5CBD8</color>
     <color name="launcher_bg">#1E5BD8</color>
+    <color name="badge_synced_bg">#E3F4E5</color>
+    <color name="badge_synced_fg">#1B7A33</color>
+    <color name="badge_new_bg">#FFE9D2</color>
+    <color name="badge_new_fg">#B35900</color>
 </resources>

@@ -3,6 +3,7 @@
     <string name="app_name">Cross Companion</string>
     <string name="home_url">https://crosswithfriends.com/</string>
 
+    <string name="home">Back to lobby</string>
     <string name="help">Help &amp; guide</string>
     <string name="hints">Hints &amp; journal</string>
     <string name="offline_title">The grid went dark</string>
@@ -42,7 +43,6 @@
     <string name="webhook_label">Google Apps Script web app URL</string>
     <string name="save">Save</string>
     <string name="setup_guide">Setup guide</string>
-    <string name="export_journal">Export full journal</string>
     <string name="journal_empty">Your journal is empty. Look up a word in the Word tab and save it here.</string>
     <string name="copy_markdown">Copy</string>
     <string name="delete">Delete</string>
@@ -53,7 +53,7 @@
     <string name="synced">Sent to your Google Doc</string>
     <string name="sync_failed">Sync failed: %1$s</string>
     <string name="no_webhook_title">No Google Doc connected yet</string>
-    <string name="no_webhook_body">Add your Apps Script web app URL in the Journal tab to sync straight to a Google Doc, or share this entry another way.</string>
+    <string name="no_webhook_body">Add your Apps Script web app URL (gear icon in the Journal tab) to sync straight to a Google Doc, or share these entries another way.</string>
     <string name="set_up_webhook">Set up webhook</string>
     <string name="share_instead">Share instead</string>
     <string name="delete_confirm">Remove “%1$s” from your journal?</string>
@@ -64,4 +64,25 @@
     <string name="open_setup_guide">Open setup guide</string>
     <string name="guide_title">Google Doc sync setup</string>
     <string name="script_copied">Script copied to clipboard</string>
+
+    <string name="sync_all">Sync all</string>
+    <string name="add_category">Add category</string>
+    <string name="doc_settings">Google Doc settings</string>
+    <string name="all_synced">Everything\'s already in your Google Doc</string>
+    <string name="synced_count">Sent %1$d new entries to your Google Doc</string>
+    <string name="already_synced">That one\'s already in your Google Doc</string>
+    <string name="journal_summary">%1$d saved · %2$d new</string>
+    <string name="badge_synced">✓ Synced</string>
+    <string name="badge_new">New</string>
+    <string name="new_category">New category</string>
+    <string name="pick_emoji">Pick an emoji</string>
+    <string name="emoji_hint">…or type any emoji</string>
+    <string name="category_name">Category name</string>
+    <string name="create">Create</string>
+    <string name="emoji_required">Pick or type an emoji</string>
+    <string name="name_required">Give it a name</string>
+    <string name="name_taken">That category already exists</string>
+    <string name="category_added">Category added</string>
+    <string name="remove_category">Remove the “%1$s” category? Saved entries keep their label.</string>
+    <string name="remove">Remove</string>
 </resources>

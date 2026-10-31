@@ -69,16 +69,23 @@
                     android:textAppearance="@style/TextAppearance.CrossCompanion.Term"
                     android:textIsSelectable="true" />
 
-                <TextView
-                    android:id="@+id/category"
-                    android:layout_width="wrap_content"
+                <!-- Detected category is preselected; tap another (or a custom one) before saving. -->
+                <HorizontalScrollView
+                    android:id="@+id/categoryScroll"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:background="@drawable/bg_chip_category"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="3dp"
-                    android:textAppearance="?attr/textAppearanceLabelMedium"
-                    android:textColor="@color/brand_dark" />
+                    android:scrollbars="none">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/categoryChips"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:chipSpacingHorizontal="6dp"
+                        app:selectionRequired="true"
+                        app:singleLine="true"
+                        app:singleSelection="true" />
+                </HorizontalScrollView>
 
                 <TextView
                     android:id="@+id/summary"

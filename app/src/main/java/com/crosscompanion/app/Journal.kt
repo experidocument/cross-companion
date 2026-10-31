@@ -20,6 +20,8 @@ data class JournalEntry(
     val usage: String? = null,
     val source: String? = null,
     val dateAdded: Long = System.currentTimeMillis(),
+    /** True once this entry has been sent to the user's Google Doc. */
+    val synced: Boolean = false,
 ) {
     val displayDate: String
         get() = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(dateAdded))
@@ -34,6 +36,7 @@ data class JournalEntry(
         put("source", source ?: JSONObject.NULL)
         put("dateAdded", dateAdded)
         put("dateAddedIso", SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(dateAdded)))
+        put("synced", synced)
     }
 
     fun toMarkdown(): String = buildString {
@@ -50,12 +53,13 @@ data class JournalEntry(
         fun fromJson(o: JSONObject) = JournalEntry(
             id = o.optString("id").ifEmpty { UUID.randomUUID().toString() },
             term = o.getString("term"),
-            category = o.optString("category", "General"),
+            category = Categories.normalize(o.optString("category", Categories.GENERAL.label)),
             trivia = o.optString("trivia"),
             etymology = o.optStringOrNull("etymology"),
             usage = o.optStringOrNull("usage"),
             source = o.optStringOrNull("source"),
             dateAdded = o.optLong("dateAdded", System.currentTimeMillis()),
+            synced = o.optBoolean("synced", false),
         )
     }
 }
@@ -77,6 +81,13 @@ class Journal(context: Context) {
             write(listOf(entry) + entries)
             true
         }
+    }
+
+    suspend fun findByTerm(term: String): JournalEntry? =
+        all().firstOrNull { it.term.equals(term, ignoreCase = true) }
+
+    suspend fun markSynced(ids: Collection<String>) = withContext(Dispatchers.IO) {
+        synchronized(LOCK) { write(read().map { if (it.id in ids) it.copy(synced = true) else it }) }
     }
 
     suspend fun delete(id: String) = withContext(Dispatchers.IO) {
@@ -101,26 +112,27 @@ class Journal(context: Context) {
     companion object {
         private val LOCK = Any()
 
+        /** Groups entries under their category headers, matching what the Doc webhook writes. */
         fun exportMarkdown(entries: List<JournalEntry>): String =
-            "# Crossword Journal\n\n" + entries.joinToString("\n\n---\n\n") { it.toMarkdown() }
+            entries.groupBy { it.category }.entries.joinToString("\n\n") { (category, group) ->
+                "## $category\n\n" + group.joinToString("\n\n") { it.toMarkdown() }
+            }
     }
 }
 
 object Webhook {
-    suspend fun sendEntry(url: String, entry: JournalEntry) {
+    /**
+     * Sends entries for the Apps Script to file under their category headers. Throws if the
+     * script reports a failure, so callers only mark entries synced after a real success.
+     */
+    suspend fun sendEntries(url: String, entries: List<JournalEntry>) {
         val body = JSONObject().apply {
-            put("type", "entry")
-            put("entry", entry.toJson())
-        }
-        Http.postJson(url, body.toString())
-    }
-
-    suspend fun sendExport(url: String, entries: List<JournalEntry>) {
-        val body = JSONObject().apply {
-            put("type", "export")
+            put("type", "entries")
             put("entries", JSONArray().apply { entries.forEach { put(it.toJson()) } })
         }
-        Http.postJson(url, body.toString())
+        val response = Http.postJson(url, body.toString())
+        val result = runCatching { JSONObject(response) }.getOrNull() ?: return
+        if (!result.optBoolean("ok", true)) throw IllegalStateException(result.optString("error", "script error"))
     }
 
     fun isValidUrl(url: String) = url.startsWith("https://script.google.com/")

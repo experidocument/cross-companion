@@ -13,6 +13,9 @@ import android.os.Bundle
 import android.os.Message
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
+import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.ValueCallback
@@ -32,6 +35,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import com.crosscompanion.app.databinding.ActivityMainBinding
@@ -52,6 +56,12 @@ class MainActivity : AppCompatActivity() {
     private var lastBackPress = 0L
     private var mainFrameFailed = false
     private var googleDialog: AlertDialog? = null
+
+    private var imeVisible = false
+    private var onHome = true
+    private var statusBarHeight = 0
+    /** Vertical center of the site's header row in WebView pixels, reported by page JS. */
+    private var headerCenterPx = -1
 
     /** Updated from page JS on every touchstart; lets pull-to-refresh respect inner scrollers. */
     @Volatile private var pageCanScrollUp = false
@@ -79,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         b.retryButton.setOnClickListener { retry() }
         b.helpFab.setOnClickListener { showOnboarding() }
         b.hintFab.setOnClickListener { showCompanion() }
+        b.homeButton.setOnClickListener { goHome() }
 
         if (savedInstanceState != null) {
             b.webView.restoreState(savedInstanceState)
@@ -125,19 +136,71 @@ class MainActivity : AppCompatActivity() {
             b.statusScrim.updateLayoutParams<ViewGroup.LayoutParams> { height = bars.top }
             b.navScrim.updateLayoutParams<ViewGroup.LayoutParams> { height = bottom }
             b.pageProgress.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin = bars.top }
+            // FABs stay anchored above the navigation bar; when the keyboard opens they are
+            // wiped off the bottom edge instead of riding up over the grid.
             b.helpFab.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 leftMargin = bars.left + fabMargin
-                bottomMargin = bottom + fabMargin
+                bottomMargin = bars.bottom + fabMargin
             }
             b.hintFab.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 rightMargin = bars.right + fabMargin
-                bottomMargin = bottom + fabMargin
+                bottomMargin = bars.bottom + fabMargin
             }
-            // With the keyboard up the grid is squeezed and the buttons would cover cells.
-            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
-            listOf(b.helpFab, b.hintFab).forEach { if (imeVisible) it.hide() else it.show() }
+            statusBarHeight = bars.top
+            positionHomeButton()
+            val keyboardUp = insets.isVisible(WindowInsetsCompat.Type.ime())
+            if (keyboardUp != imeVisible) {
+                imeVisible = keyboardUp
+                updateChrome()
+            }
             WindowInsetsCompat.CONSUMED
         }
+    }
+
+    /** Shows or hides the floating buttons and the Home button for the current page and keyboard. */
+    private fun updateChrome() {
+        val offline = b.offlineView.visibility == View.VISIBLE
+        setFabShown(b.hintFab, !imeVisible)
+        setFabShown(b.helpFab, !imeVisible && (onHome || offline))
+        b.homeButton.isVisible = !onHome && !offline
+    }
+
+    private fun setFabShown(fab: View, shown: Boolean) {
+        val offscreen = (fab.height + (fab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin)
+            .coerceAtLeast(resources.displayMetrics.heightPixels / 4).toFloat()
+        val target = if (shown) 0f else offscreen
+        if (fab.tag == target) return
+        fab.tag = target
+        fab.animate().cancel()
+        if (shown) {
+            fab.visibility = View.VISIBLE
+            fab.animate().translationY(0f).setInterpolator(DecelerateInterpolator(1.6f)).setDuration(280).start()
+        } else {
+            fab.animate().translationY(offscreen).setInterpolator(AccelerateInterpolator(1.6f)).setDuration(200)
+                .withEndAction { if (fab.tag == offscreen) fab.visibility = View.INVISIBLE }
+                .start()
+        }
+    }
+
+    /** Centers the Home button on the site's header row, nudged slightly upward. */
+    private fun positionHomeButton() {
+        val density = resources.displayMetrics.density
+        val center = if (headerCenterPx > 0) headerCenterPx else (20 * density).toInt()
+        val size = b.homeButton.layoutParams.height
+        b.homeButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            topMargin = (statusBarHeight + center - size / 2 - 2 * density).toInt().coerceAtLeast(statusBarHeight)
+        }
+    }
+
+    private fun goHome() {
+        getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(b.webView.windowToken, 0)
+        b.webView.evaluateJavascript("document.activeElement && document.activeElement.blur()", null)
+        b.webView.loadUrl(homeUrl)
+    }
+
+    private fun onPageChanged(url: String) {
+        onHome = isHome(url)
+        updateChrome()
     }
 
     // endregion
@@ -177,6 +240,14 @@ class MainActivity : AppCompatActivity() {
             pageCanScrollUp = value
         }
 
+        @JavascriptInterface
+        fun setHeaderCenter(px: Int) {
+            runOnUiThread {
+                headerCenterPx = px
+                positionHomeButton()
+            }
+        }
+
         /** Receives CSS colors ("rgb(r, g, b)") of the page's top and bottom edges. */
         @JavascriptInterface
         fun setEdgeColors(top: String, bottom: String) {
@@ -211,12 +282,16 @@ class MainActivity : AppCompatActivity() {
             if (!mainFrameFailed) {
                 b.offlineView.visibility = View.GONE
                 rememberUrl(url)
+                onPageChanged(url)
             }
         }
 
         // Fires for SPA pushState navigations too, so rooms are remembered as soon as they open.
         override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
-            if (!mainFrameFailed) rememberUrl(url)
+            if (!mainFrameFailed) {
+                rememberUrl(url)
+                onPageChanged(url)
+            }
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
@@ -322,6 +397,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun retry() {
         b.offlineView.visibility = View.GONE
+        updateChrome()
         val current = b.webView.url
         if (current.isNullOrEmpty() || current == "about:blank") {
             b.webView.loadUrl(prefs.lastUrl ?: homeUrl)
@@ -336,6 +412,7 @@ class MainActivity : AppCompatActivity() {
         b.offlineView.visibility = View.VISIBLE
         val surface = getColor(R.color.surface)
         applyBarColors(surface, surface)
+        updateChrome()
     }
 
     private fun isOnline(): Boolean {
@@ -447,7 +524,15 @@ class MainActivity : AppCompatActivity() {
                 return 'rgb(255, 255, 255)';
               }
               var last = '', timer = null;
+              var lastHeader = -1;
               window.__companionReportEdges = function() {
+                var logo = document.evaluate("//*[normalize-space(text())='Cross with Friends']", document.body,
+                  null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+                if (logo) {
+                  var r = logo.getBoundingClientRect();
+                  var center = Math.round((r.top + r.height / 2) * window.devicePixelRatio);
+                  if (r.height > 0 && center !== lastHeader) { lastHeader = center; CompanionShell.setHeaderCenter(center); }
+                }
                 var top = bgAt(1), bottom = bgAt(window.innerHeight - 1);
                 if (top + bottom === last) return;
                 last = top + bottom;

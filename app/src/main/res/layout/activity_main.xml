@@ -32,6 +32,18 @@
             android:layout_height="match_parent" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+    <!-- Shown only off the lobby; centered on the site's header row (see positionHomeButton). -->
+    <ImageButton
+        android:id="@+id/homeButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|center_horizontal"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/home"
+        android:src="@drawable/ic_home"
+        android:visibility="gone"
+        app:tint="@android:color/white" />
+
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/pageProgress"
         android:layout_width="match_parent"
