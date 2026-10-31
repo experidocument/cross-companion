@@ -18,13 +18,28 @@ data class JournalEntry(
     val trivia: String,
     val etymology: String? = null,
     val usage: String? = null,
+    /** Encyclopedia article behind the trivia. */
     val source: String? = null,
+    /** Dictionary page behind the definition. */
+    val definitionSource: String? = null,
+    /** Page behind the origin, when it differs from the definition's. */
+    val etymologySource: String? = null,
+    /** Picture of the subject from the encyclopedia article, if it had one. */
+    val imageUrl: String? = null,
     val dateAdded: Long = System.currentTimeMillis(),
     /** True once this entry has been sent to the user's Google Doc. */
     val synced: Boolean = false,
 ) {
     val displayDate: String
         get() = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(dateAdded))
+
+    /** Always something to look at: the article's picture, or an image search for the term. */
+    val imageLink: String
+        get() = imageUrl ?: ("https://www.google.com/search?tbm=isch&q=" + Http.encode(term))
+
+    /** Where the origin came from: its own page, or the dictionary page it shares with the definition. */
+    val originLink: String?
+        get() = etymology?.let { etymologySource ?: definitionSource }
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
@@ -34,6 +49,12 @@ data class JournalEntry(
         put("etymology", etymology ?: JSONObject.NULL)
         put("usage", usage ?: JSONObject.NULL)
         put("source", source ?: JSONObject.NULL)
+        put("definitionSource", definitionSource ?: JSONObject.NULL)
+        put("etymologySource", etymologySource ?: JSONObject.NULL)
+        put("imageUrl", imageUrl ?: JSONObject.NULL)
+        // Derived links, so the Doc script doesn't have to know the fallback rules.
+        put("originLink", originLink ?: JSONObject.NULL)
+        put("imageLink", imageLink)
         put("dateAdded", dateAdded)
         put("dateAddedIso", SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(dateAdded)))
         put("synced", synced)
@@ -44,9 +65,12 @@ data class JournalEntry(
         appendLine("*$category* · added $displayDate")
         appendLine()
         appendLine(trivia)
+        val sources = listOfNotNull(source, definitionSource).distinct()
+        if (sources.isNotEmpty()) { appendLine(); appendLine("Source: " + sources.joinToString(" · ")) }
         etymology?.let { appendLine(); appendLine("**Origin:** $it") }
+        originLink?.takeIf { it !in sources }?.let { appendLine("Origin source: $it") }
         usage?.let { appendLine(); appendLine("**Usage:** _${it}_") }
-        source?.let { appendLine(); appendLine("Source: $it") }
+        appendLine(); appendLine("Picture: $imageLink")
     }.trimEnd()
 
     companion object {
@@ -58,6 +82,9 @@ data class JournalEntry(
             etymology = o.optStringOrNull("etymology"),
             usage = o.optStringOrNull("usage"),
             source = o.optStringOrNull("source"),
+            definitionSource = o.optStringOrNull("definitionSource"),
+            etymologySource = o.optStringOrNull("etymologySource"),
+            imageUrl = o.optStringOrNull("imageUrl"),
             dateAdded = o.optLong("dateAdded", System.currentTimeMillis()),
             synced = o.optBoolean("synced", false),
         )

@@ -2,8 +2,9 @@
  * Cross Companion → Google Doc webhook.
  *
  * Receives journal entries from the Cross Companion Android app and files each one as a
- * bullet under its category header (e.g. "🎬 Film & TV") in a Google Doc you own. Headers
- * that already exist are reused, so repeated syncs keep each category in one section.
+ * bullet under its category header (e.g. "🎬 Film & TV") in a Google Doc you own, with
+ * linked sources and a picture link beneath it. Headers that already exist are reused, so
+ * repeated syncs keep each category in one section.
  *
  * Setup: open your Doc → Extensions → Apps Script → replace everything with this file →
  * Deploy → New deployment → Web app (Execute as: Me, Who has access: Anyone) → copy the URL
@@ -94,9 +95,41 @@ function insertEntry_(body, index, entry) {
   text.setBold(0, term.length - 1, true);
   text.setForegroundColor(main.length - date.length - 2, main.length - 1, '#5B6170');
 
+  const sources = [entry.source, entry.definitionSource].filter(Boolean)
+    .filter(function (url, i, all) { return all.indexOf(url) === i; });
+  if (sources.length) index = links_(body, index, 'Source: ', sources);
   if (entry.etymology) index = detail_(body, index, 'Origin: ', entry.etymology, false);
+  if (entry.etymology && entry.originLink && sources.indexOf(entry.originLink) < 0) {
+    index = links_(body, index, 'Origin source: ', [entry.originLink]);
+  }
   if (entry.usage) index = detail_(body, index, 'Usage: ', '“' + entry.usage + '”', true);
+  if (entry.imageLink) {
+    const label = entry.imageUrl ? 'View picture' : 'Image search';
+    index = links_(body, index, 'Picture: ', [entry.imageLink], [label]);
+  }
   return index;
+}
+
+/** A sub-bullet like "Source: Wikipedia · Wiktionary" with each name linked to its page. */
+function links_(body, index, label, urls, names) {
+  const parts = urls.map(function (url, i) { return (names && names[i]) || siteName_(url); });
+  const item = listItem_(body, index, label + parts.join(' · '), 1);
+  const text = item.editAsText();
+  text.setBold(0, label.length - 1, true);
+  let pos = label.length;
+  parts.forEach(function (part, i) {
+    text.setLinkUrl(pos, pos + part.length - 1, urls[i]);
+    pos += part.length + 3; // ' · '
+  });
+  return index + 1;
+}
+
+function siteName_(url) {
+  const host = String(url).replace(/^https?:\/\//, '').split('/')[0].replace(/^(www|en|m)\./, '');
+  if (host.indexOf('wikipedia.org') >= 0) return 'Wikipedia';
+  if (host.indexOf('wiktionary.org') >= 0) return 'Wiktionary';
+  if (host.indexOf('wikimedia.org') >= 0) return 'Wikimedia';
+  return host;
 }
 
 function detail_(body, index, label, value, italic) {
@@ -114,7 +147,7 @@ function listItem_(body, index, content, level) {
   item.setHeading(DocumentApp.ParagraphHeading.NORMAL);
   item.setNestingLevel(level);
   item.setGlyphType(level === 0 ? DocumentApp.GlyphType.BULLET : DocumentApp.GlyphType.HOLLOW_BULLET);
-  item.editAsText().setBold(false).setItalic(false).setForegroundColor('#1A1C22');
+  item.editAsText().setBold(false).setItalic(false).setForegroundColor('#1A1C22').setLinkUrl(null);
   return item;
 }
 

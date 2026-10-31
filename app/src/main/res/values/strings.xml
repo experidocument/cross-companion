@@ -29,7 +29,7 @@
     <string name="origin">Origin</string>
     <string name="usage">Usage</string>
     <string name="related_topics">Did you mean…</string>
-    <string name="nothing_found">Nothing turned up for that one. Try a different spelling or fewer words.</string>
+    <string name="nothing_found">Oops! Nothing turned up for that one. Please feel free to type your own below, or try a different spelling.</string>
     <string name="lookup_failed">Lookup failed. Check your connection and try again.</string>
     <string name="saved">Saved to your journal</string>
     <string name="already_saved">That one\'s already in your journal</string>
@@ -85,4 +85,20 @@
     <string name="category_added">Category added</string>
     <string name="remove_category">Remove the “%1$s” category? Saved entries keep their label.</string>
     <string name="remove">Remove</string>
+
+    <string name="add_title">Add a title</string>
+    <string name="add_description">Tap to add a description</string>
+    <string name="add_origin">Tap to add an origin (optional)</string>
+    <string name="edit_title">Edit title</string>
+    <string name="edit_description">Edit description</string>
+    <string name="edit_origin">Edit origin</string>
+    <string name="field_required">This can\'t be empty</string>
+    <string name="description_needed">Add a description first</string>
+
+    <string name="description">Description</string>
+    <string name="read_more">Read more</string>
+    <string name="link_encyclopedia">📚 Wikipedia</string>
+    <string name="link_dictionary">📖 Dictionary</string>
+    <string name="link_origin">🔤 Origin source</string>
+    <string name="link_picture">🖼️ Picture</string>
 </resources>

@@ -1,6 +1,18 @@
 package com.crosscompanion.app
 
 import android.annotation.SuppressLint
+import android.graphics.Color
+import android.graphics.Typeface
+import android.text.InputType
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.text.style.DynamicDrawableSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.ImageSpan
+import android.text.style.StyleSpan
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -10,6 +22,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.JavascriptInterface
@@ -26,15 +39,18 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.crosscompanion.app.databinding.DialogAddCategoryBinding
+import com.crosscompanion.app.databinding.DialogEditFieldBinding
 import com.crosscompanion.app.databinding.DialogSettingsBinding
 import com.crosscompanion.app.databinding.ItemJournalEntryBinding
 import com.crosscompanion.app.databinding.SheetCompanionBinding
+import com.crosscompanion.app.databinding.SheetEntryDetailBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.text.BreakIterator
@@ -130,13 +146,23 @@ class CompanionSheet : BottomSheetDialogFragment() {
             relatedChips.removeAllViews()
         }
         lookupJob = viewLifecycleOwner.lifecycleScope.launch {
-            val result = runCatching { WordLookup.lookup(query) }
+            val result = try {
+                Result.success(WordLookup.lookup(query))
+            } catch (e: CancellationException) {
+                // Superseded by a newer search: say nothing, the new one will report.
+                throw e
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
             val w = _b?.word ?: return@launch
             w.progress.isVisible = false
             result.onSuccess { r ->
-                if (r == null) showWordMessage(getString(R.string.nothing_found)) else showResult(r)
-            }.onFailure {
-                showWordMessage(getString(R.string.lookup_failed))
+                if (r == null || r.summary.isEmpty()) showManualEntry(WordLookup.normalize(query), r?.related.orEmpty())
+                else showResult(r)
+            }.onFailure { e ->
+                // Only a genuine connection problem gets the "check your connection" message.
+                if (e is LookupUnavailableException) showWordMessage(getString(R.string.lookup_failed))
+                else showManualEntry(WordLookup.normalize(query), emptyList())
             }
         }
     }
@@ -146,21 +172,52 @@ class CompanionSheet : BottomSheetDialogFragment() {
         b.word.message.isVisible = true
     }
 
-    private fun showResult(r: LookupResult) = with(b.word) {
-        currentResult = r.takeIf { it.summary.isNotEmpty() }
-        if (r.summary.isNotEmpty()) {
-            resultCard.isVisible = true
-            term.text = r.term.uppercase()
+    private fun showResult(r: LookupResult) {
+        b.word.message.isVisible = false
+        bindResult(r)
+        showRelated(r.related)
+    }
+
+    /** Nothing found: offer the same card, blank, so the user can write the entry themselves. */
+    private fun showManualEntry(query: String, related: List<String>) {
+        showWordMessage(getString(R.string.nothing_found))
+        bindResult(
+            LookupResult(
+                term = query.ifEmpty { "?" },
+                category = Categories.GENERAL.label,
+                summary = "",
+                etymology = null,
+                usage = null,
+                sourceUrl = null,
+                definitionSourceUrl = null,
+                etymologySourceUrl = null,
+                imageUrl = null,
+                related = related,
+            ),
+        )
+        showRelated(related)
+    }
+
+    /** [resetCategory] is false for in-place edits, so the user's chip choice survives. */
+    private fun bindResult(r: LookupResult, resetCategory: Boolean = true) = with(b.word) {
+        currentResult = r
+        resultCard.isVisible = true
+        setEditable(term, r.term.uppercase(), R.string.add_title) { editField(R.string.edit_title, r.term, singleLine = true) { v -> currentResult?.copy(term = v) } }
+        setEditable(summary, r.summary, R.string.add_description) { editField(R.string.edit_description, r.summary) { v -> currentResult?.copy(summary = v) } }
+        originLabel.isVisible = true
+        origin.isVisible = true
+        setEditable(origin, r.etymology.orEmpty(), R.string.add_origin) { editField(R.string.edit_origin, r.etymology.orEmpty(), allowEmpty = true) { v -> currentResult?.copy(etymology = v.ifEmpty { null }) } }
+        setOptional(usageLabel, usage, r.usage?.let { "“$it”" })
+        if (resetCategory) {
             selectedCategory = r.category
             buildCategoryChips()
-            summary.text = r.summary
-            setOptional(originLabel, origin, r.etymology)
-            setOptional(usageLabel, usage, r.usage?.let { "“$it”" })
-        } else {
-            showWordMessage(getString(R.string.nothing_found))
         }
-        relatedLabel.isVisible = r.related.isNotEmpty()
-        r.related.forEach { title ->
+    }
+
+    private fun showRelated(related: List<String>) = with(b.word) {
+        relatedChips.removeAllViews()
+        relatedLabel.isVisible = related.isNotEmpty()
+        related.forEach { title ->
             relatedChips.addView(Chip(requireContext()).apply {
                 text = title
                 setOnClickListener {
@@ -168,6 +225,72 @@ class CompanionSheet : BottomSheetDialogFragment() {
                     runLookup(title)
                 }
             })
+        }
+    }
+
+    /**
+     * Shows [text] (or a tappable placeholder when empty) followed by a tiny inline pencil.
+     * Tapping the pencil, or the placeholder, calls [onEdit].
+     */
+    private fun setEditable(view: TextView, text: String, placeholder: Int, onEdit: () -> Unit) {
+        val click = object : ClickableSpan() {
+            override fun onClick(widget: View) = onEdit()
+            override fun updateDrawState(ds: TextPaint) { ds.isUnderlineText = false }
+        }
+        val sb = SpannableStringBuilder()
+        if (text.isBlank()) {
+            sb.append(getString(placeholder))
+            sb.setSpan(ForegroundColorSpan(color(R.color.on_surface_muted)), 0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            sb.setSpan(StyleSpan(Typeface.ITALIC), 0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            sb.setSpan(click, 0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        } else {
+            sb.append(text)
+        }
+        val size = (view.textSize * 0.85f).toInt().coerceAtMost((18 * resources.displayMetrics.density).toInt())
+        val pencil = ContextCompat.getDrawable(requireContext(), R.drawable.ic_edit)!!.mutate().apply { setBounds(0, 0, size, size) }
+        sb.append("\u00A0\u00A0")
+        val start = sb.length
+        sb.append("\uFFFC")
+        sb.setSpan(ImageSpan(pencil, DynamicDrawableSpan.ALIGN_BASELINE), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sb.setSpan(click, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        view.text = sb
+        view.movementMethod = LinkMovementMethod.getInstance()
+        view.highlightColor = Color.TRANSPARENT
+        view.contentDescription = null
+    }
+
+    private fun editField(
+        title: Int,
+        current: String,
+        singleLine: Boolean = false,
+        allowEmpty: Boolean = false,
+        apply: (String) -> LookupResult?,
+    ) {
+        val v = DialogEditFieldBinding.inflate(layoutInflater)
+        v.input.setText(current)
+        if (singleLine) {
+            v.input.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+            v.input.maxLines = 1
+        } else {
+            v.input.minLines = 3
+        }
+        v.input.setSelection(v.input.length())
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(title)
+            .setView(v.root)
+            .setPositiveButton(R.string.save, null)
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+        v.input.requestFocus()
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val value = v.input.text.toString().trim()
+            if (value.isEmpty() && !allowEmpty) {
+                v.layout.error = getString(R.string.field_required)
+                return@setOnClickListener
+            }
+            apply(value)?.let { bindResult(it, resetCategory = false) }
+            dialog.dismiss()
         }
     }
 
@@ -214,6 +337,10 @@ class CompanionSheet : BottomSheetDialogFragment() {
     }
 
     private fun saveResult(r: LookupResult) {
+        if (r.summary.isBlank()) {
+            requireContext().toast(R.string.description_needed)
+            return
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             val added = journal.add(r.toEntry(selectedCategory ?: r.category))
             requireContext().toast(if (added) R.string.saved else R.string.already_saved)
@@ -222,6 +349,10 @@ class CompanionSheet : BottomSheetDialogFragment() {
 
     /** Syncing from the Word tab also saves the term, so the journal knows it's in the Doc. */
     private fun syncLookup(r: LookupResult) {
+        if (r.summary.isBlank()) {
+            requireContext().toast(R.string.description_needed)
+            return
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             val existing = journal.findByTerm(r.term)
             if (existing?.synced == true) {
@@ -484,6 +615,53 @@ class CompanionSheet : BottomSheetDialogFragment() {
             .show()
     }
 
+    /** Full entry in its own sheet; it slides up over the list and back down to the same spot. */
+    private fun showEntryDetail(e: JournalEntry) {
+        val v = SheetEntryDetailBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(requireContext())
+        dialog.setContentView(v.root)
+        dialog.behavior.apply {
+            skipCollapsed = true
+            state = BottomSheetBehavior.STATE_EXPANDED
+            maxHeight = (resources.displayMetrics.heightPixels * 0.88).toInt()
+        }
+        with(v) {
+            term.text = e.term.uppercase()
+            meta.text = "${e.category} · ${e.displayDate}"
+            bindBadge(badge, e.synced)
+            trivia.text = e.trivia
+            setOptional(originLabel, origin, e.etymology)
+            setOptional(usageLabel, usage, e.usage?.let { "“$it”" })
+            listOfNotNull(
+                e.source?.let { getString(R.string.link_encyclopedia) to it },
+                e.definitionSource?.let { getString(R.string.link_dictionary) to it },
+                e.originLink?.takeIf { it != e.definitionSource }?.let { getString(R.string.link_origin) to it },
+                getString(R.string.link_picture) to e.imageLink,
+            ).forEach { (label, url) ->
+                links.addView(Chip(requireContext()).apply {
+                    text = label
+                    setOnClickListener { requireContext().openExternal(url) }
+                })
+            }
+            copy.setOnClickListener {
+                requireContext().copyToClipboard(e.term, e.toMarkdown())
+                requireContext().toast(R.string.copied)
+            }
+            sync.isEnabled = !e.synced
+            sync.setOnClickListener {
+                dialog.dismiss()
+                syncEntries(listOf(e))
+            }
+        }
+        dialog.show()
+    }
+
+    private fun bindBadge(badge: TextView, synced: Boolean) {
+        badge.setText(if (synced) R.string.badge_synced else R.string.badge_new)
+        badge.setTextColor(color(if (synced) R.color.badge_synced_fg else R.color.badge_new_fg))
+        badge.background.mutate().setTint(color(if (synced) R.color.badge_synced_bg else R.color.badge_new_bg))
+    }
+
     private fun confirmDelete(entry: JournalEntry) {
         MaterialAlertDialogBuilder(requireContext())
             .setMessage(getString(R.string.delete_confirm, entry.term))
@@ -525,9 +703,8 @@ class CompanionSheet : BottomSheetDialogFragment() {
                     requireContext().copyToClipboard(e.term, e.toMarkdown())
                     requireContext().toast(R.string.copied)
                 }
-                badge.setText(if (e.synced) R.string.badge_synced else R.string.badge_new)
-                badge.setTextColor(color(if (e.synced) R.color.badge_synced_fg else R.color.badge_new_fg))
-                badge.background.mutate().setTint(color(if (e.synced) R.color.badge_synced_bg else R.color.badge_new_bg))
+                bindBadge(badge, e.synced)
+                root.setOnClickListener { showEntryDetail(e) }
                 sync.isEnabled = !e.synced
                 sync.setOnClickListener { syncEntries(listOf(e)) }
                 delete.setOnClickListener { confirmDelete(e) }

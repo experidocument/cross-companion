@@ -66,8 +66,7 @@
                     android:id="@+id/term"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.CrossCompanion.Term"
-                    android:textIsSelectable="true" />
+                    android:textAppearance="@style/TextAppearance.CrossCompanion.Term" />
 
                 <!-- Detected category is preselected; tap another (or a custom one) before saving. -->
                 <HorizontalScrollView
@@ -93,8 +92,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:lineSpacingMultiplier="1.15"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textIsSelectable="true" />
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                 <TextView
                     android:id="@+id/originLabel"
@@ -108,8 +106,7 @@
                     android:id="@+id/origin"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textIsSelectable="true" />
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                 <TextView
                     android:id="@+id/usageLabel"

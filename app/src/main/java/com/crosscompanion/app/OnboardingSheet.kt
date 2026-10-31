@@ -32,24 +32,45 @@ class OnboardingSheet : BottomSheetDialogFragment() {
                 "Open crosswithfriends.com in your browser, set a password on your account, then log in here.",
         ),
         Card(
+            "🧭", "Getting around",
+            "Inside a puzzle, tap the little 🏠 at the top to hop back to the lobby (back works too). " +
+                "Start typing and the buttons duck out of the way, then slide back when the keyboard closes. " +
+                "This help button lives in the lobby, so your grid stays clutter-free.",
+        ),
+        Card(
             "💡", "The hint engine",
             "Stuck? Tap the yellow lightbulb (bottom right). It nudges you past the stumbling block without " +
                 "taking the joy out of the solve. You decide how much help you get.",
         ),
         Card(
             "📚", "Word or term mode",
-            "Never heard of ETUI or ESNE? Search any word, name or idiom to get its definition, trivia and " +
-                "origin. Save the good ones to your journal so they stick for next time.",
+            "Never heard of ETUI or ESNE? Search any word, name or idiom for its definition, trivia and " +
+                "origin. Something off? Tap the tiny ✏️ after the title, description or origin to make it " +
+                "your own. If nothing turns up, just type the entry yourself.",
+        ),
+        Card(
+            "🏷️", "Categories, your way",
+            "Every word gets a category like 🎬 Film & TV, 🏛️ History or 📖 Vocabulary. We guess, you " +
+                "decide: tap a different chip before saving. Want your own? Hit + in the Journal tab, pick an " +
+                "emoji and a short name. Long-press a custom chip to remove it.",
         ),
         Card(
             "🔎", "Clue mode",
             "Paste a tricky clue like \"Ship's front\" and get plausible answers grouped by letter count, " +
-                "straight from Google's AI Overview. Use it sparingly. We won't tell.",
+                "straight from Google's AI Overview. If Google asks you to prove you're human, tick the box " +
+                "and carry on. Found a gem? Look it up in Word mode to save it.",
         ),
         Card(
-            "📓", "Journal & Google Doc sync",
-            "Your journal keeps every word you've learned, even offline. Connect a Google Doc with a " +
-                "two-minute Apps Script setup and new entries land in your Doc with one tap.",
+            "📓", "Your journal",
+            "Every word you save lives here, even offline. Tap any entry to read the whole thing, with " +
+                "links to its sources and a picture. Orange \"New\" means it hasn't reached your Google Doc " +
+                "yet; green \"Synced\" means it has.",
+        ),
+        Card(
+            "☁️", "Google Doc sync",
+            "Connect your own Google Doc with a two-minute Apps Script setup (gear icon in the Journal tab). " +
+                "\"Sync all\" sends only new entries, filed under their category headers with source and " +
+                "picture links. Set it up before? Paste the latest script from the guide.",
             "Open setup guide",
         ),
     )
