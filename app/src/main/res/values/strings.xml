@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cross Companion</string>
+    <string name="home_url">https://crosswithfriends.com/</string>
+
+    <string name="help">Help &amp; guide</string>
+    <string name="hints">Hints &amp; journal</string>
+    <string name="offline_title">The grid went dark</string>
+    <string name="offline_body">We can\'t reach Cross with Friends right now. Check your connection and give it another go.</string>
+    <string name="retry">Retry</string>
+    <string name="press_back_again">Press back again to leave the puzzle party</string>
+
+    <string name="google_signin_title">Google sign-in won\'t work here</string>
+    <string name="google_signin_body">Google blocks its sign-in inside apps that embed web pages (like this one), for security reasons.\n\nInstead:\n• Sign up or log in with email and password, or\n• If your account was created with Google, open crosswithfriends.com in your browser and set a password on your account, then log in here with it.</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="got_it">Got it</string>
+
+    <string name="tab_word">Word or term</string>
+    <string name="tab_clue">Clue</string>
+    <string name="tab_journal">Journal</string>
+
+    <string name="word_hint">Look up a word, name or idiom</string>
+    <string name="clue_hint">Type a crossword clue</string>
+    <string name="search">Search</string>
+    <string name="save_to_journal">Save to journal</string>
+    <string name="sync_to_doc">Sync to Doc</string>
+    <string name="search_google">Search on Google</string>
+    <string name="origin">Origin</string>
+    <string name="usage">Usage</string>
+    <string name="related_topics">Did you mean…</string>
+    <string name="nothing_found">Nothing turned up for that one. Try a different spelling or fewer words.</string>
+    <string name="lookup_failed">Lookup failed. Check your connection and try again.</string>
+    <string name="saved">Saved to your journal</string>
+    <string name="already_saved">That one\'s already in your journal</string>
+
+    <string name="clue_banner">Use the Word section to search and save this term for later</string>
+    <string name="clue_empty">Enter a clue like “Ship\'s front” or “Mammoth” to see answers by letter count.</string>
+    <string name="clue_no_overview">No AI Overview appeared for this clue. Showing the top results instead.</string>
+    <string name="clue_challenge">Google wants to check you\'re human. Complete the check above and your answers will load.</string>
+    <string name="open_full_results">Open full results in browser</string>
+
+    <string name="webhook_label">Google Apps Script web app URL</string>
+    <string name="save">Save</string>
+    <string name="setup_guide">Setup guide</string>
+    <string name="export_journal">Export full journal</string>
+    <string name="journal_empty">Your journal is empty. Look up a word in the Word tab and save it here.</string>
+    <string name="copy_markdown">Copy</string>
+    <string name="delete">Delete</string>
+    <string name="sync">Sync</string>
+    <string name="copied">Copied as Markdown</string>
+    <string name="webhook_saved">Webhook saved</string>
+    <string name="webhook_invalid">That doesn\'t look like an Apps Script URL (it should start with https://script.google.com/)</string>
+    <string name="synced">Sent to your Google Doc</string>
+    <string name="sync_failed">Sync failed: %1$s</string>
+    <string name="no_webhook_title">No Google Doc connected yet</string>
+    <string name="no_webhook_body">Add your Apps Script web app URL in the Journal tab to sync straight to a Google Doc, or share this entry another way.</string>
+    <string name="set_up_webhook">Set up webhook</string>
+    <string name="share_instead">Share instead</string>
+    <string name="delete_confirm">Remove “%1$s” from your journal?</string>
+
+    <string name="next">Next</string>
+    <string name="lets_solve">Let\'s solve!</string>
+    <string name="skip">Skip</string>
+    <string name="open_setup_guide">Open setup guide</string>
+    <string name="guide_title">Google Doc sync setup</string>
+    <string name="script_copied">Script copied to clipboard</string>
+</resources>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: sans-serif; color: #1A1C22; margin: 0; padding: 20px 18px 40px; line-height: 1.5; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  p.lead { color: #5B6170; margin-top: 0; }
+  ol { padding-left: 22px; }
+  li { margin-bottom: 12px; }
+  code { background: #F3F5FA; padding: 1px 5px; border-radius: 4px; font-size: 0.92em; }
+  .tip { background: #FFF1CC; border-radius: 12px; padding: 10px 14px; margin: 16px 0; }
+  .script-head { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; }
+  button { background: #1E5BD8; color: #fff; border: 0; border-radius: 20px; padding: 9px 18px; font-size: 14px; }
+  pre { background: #F3F5FA; border-radius: 12px; padding: 12px; overflow-x: auto; font-size: 12px; line-height: 1.4; }
+</style>
+</head>
+<body>
+  <h1>Sync your journal to a Google Doc</h1>
+  <p class="lead">About two minutes, once. The script runs in your own Google account, so your words only ever go to your Doc.</p>
+
+  <ol>
+    <li>On a computer, create a new Google Doc (try <code>docs.new</code>) and name it something like <b>Crossword Journal</b>.</li>
+    <li>In the Doc, open <b>Extensions → Apps Script</b>.</li>
+    <li>Delete the sample code, paste the script below and click <b>Save</b>.</li>
+    <li>Click <b>Deploy → New deployment</b>. Choose the gear icon, then <b>Web app</b>.</li>
+    <li>Set <b>Execute as</b> to <b>Me</b> and <b>Who has access</b> to <b>Anyone</b>. Click <b>Deploy</b>.</li>
+    <li>Google asks you to authorize the script. Review it, then allow it to edit your documents.</li>
+    <li>Copy the <b>Web app URL</b> (it starts with <code>https://script.google.com/macros/s/</code>).</li>
+    <li>In Cross Companion, open the lightbulb → <b>Journal</b>, paste the URL and tap <b>Save</b>.</li>
+  </ol>
+
+  <div class="tip">Keep the URL private: anyone with it can add text to that Doc. If it leaks, create a new deployment and archive the old one.</div>
+  <div class="tip">Changed the script later? Use <b>Deploy → Manage deployments → Edit → New version</b> so the URL stays the same.</div>
+
+  <div class="script-head">
+    <b>The script</b>
+    <button onclick="CompanionGuide.copyScript()">Copy script</button>
+  </div>
+  <pre id="script">{{SCRIPT}}</pre>
+</body>
+</html>

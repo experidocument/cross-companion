@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CrossCompanion" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/brand</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">@color/brand_container</item>
+        <item name="colorOnPrimaryContainer">@color/brand_dark</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryContainer">@color/accent_container</item>
+        <item name="colorOnSecondaryContainer">@color/on_surface</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.CrossCompanion.BottomSheet</item>
+    </style>
+
+    <style name="ThemeOverlay.CrossCompanion.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="android:windowSoftInputMode">adjustResize</item>
+        <item name="bottomSheetStyle">@style/Widget.CrossCompanion.BottomSheet</item>
+    </style>
+
+    <style name="Widget.CrossCompanion.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/surface</item>
+    </style>
+
+    <style name="TextAppearance.CrossCompanion.Term" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
+    <style name="TextAppearance.CrossCompanion.Label" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textColor">@color/on_surface_muted</item>
+    </style>
+</resources>

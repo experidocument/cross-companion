@@ -1,0 +1,9 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- 3x3 crossword grid with two black squares -->
+    <path android:fillColor="#FFFFFF" android:pathData="M33,33h42v42h-42z" />
+    <path android:fillColor="#1A1C22" android:pathData="M47,33h14v14h-14zM33,61h14v14h-14z" />
+    <path android:fillColor="#00000000" android:strokeColor="#1A1C22" android:strokeWidth="2"
+        android:pathData="M33,33h42v42h-42zM47,33v42M61,33v42M33,47h42M33,61h42" />
+    <path android:fillColor="#FFB400" android:pathData="M61,61h14v14h-14z" />
+</vector>
