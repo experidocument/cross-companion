@@ -67,6 +67,10 @@ class CompanionSheet : BottomSheetDialogFragment() {
     private var selectedCategory: String? = null
     private var lookupJob: Job? = null
     private var clueUrl: String? = null
+    /** Set once the current Word entry is saved or synced, so it isn't brought back next time. */
+    private var wordConsumed = false
+    /** A remembered clue search waiting to reload until the Clue tab is actually opened. */
+    private var pendingClue: String? = null
 
     private val behavior: BottomSheetBehavior<FrameLayout>?
         get() = (dialog as? BottomSheetDialog)?.behavior
@@ -85,7 +89,7 @@ class CompanionSheet : BottomSheetDialogFragment() {
         setUpWordTab()
         setUpClueTab()
         setUpJournalTab()
-        showTab(0)
+        restoreState()
     }
 
     override fun onStart() {
@@ -101,12 +105,14 @@ class CompanionSheet : BottomSheetDialogFragment() {
     }
 
     override fun onDestroyView() {
+        rememberState()
         b.clue.answerWeb.destroy()
         _b = null
         super.onDestroyView()
     }
 
     private fun showTab(position: Int) {
+        if (position == 1) pendingClue?.let { pendingClue = null; runClue(it) }
         b.word.root.isVisible = position == 0
         b.clue.root.isVisible = position == 1
         b.journal.root.isVisible = position == 2
@@ -114,6 +120,53 @@ class CompanionSheet : BottomSheetDialogFragment() {
         // BottomSheetBehavior caches its nested scrolling child on layout; re-layout so it
         // tracks the scroller of the tab that is now visible.
         (b.root.parent as? View)?.requestLayout()
+    }
+
+    /**
+     * Keeps what the user was reading when the sheet is closed by accident (back, swipe down),
+     * except a Word entry that was already saved or synced.
+     */
+    private fun rememberState() = with(HintMemory) {
+        val w = b.word
+        if (wordConsumed) {
+            clearWord()
+        } else {
+            wordQuery = w.input.text?.toString().orEmpty()
+            wordResult = currentResult?.takeIf { w.resultCard.isVisible }
+            wordCategory = selectedCategory
+            wordMessage = w.message.text?.toString()?.takeIf { w.message.isVisible }
+            // Closed mid-lookup: search again on reopen rather than show a stale spinner.
+            wordPending = w.progress.isVisible
+        }
+        clueQuery = b.clue.input.text?.toString().orEmpty()
+        clueSearched = clueUrl != null || pendingClue != null
+        tab = b.tabs.selectedTabPosition
+    }
+
+    private fun restoreState() = with(HintMemory) {
+        val w = b.word
+        if (wordQuery.isNotEmpty()) {
+            w.input.setText(wordQuery)
+            w.input.setSelection(wordQuery.length)
+        }
+        val result = wordResult
+        when {
+            result != null -> {
+                selectedCategory = wordCategory ?: result.category
+                bindResult(result, resetCategory = false)
+                buildCategoryChips()
+                showRelated(result.related)
+                wordMessage?.let { showWordMessage(it) }
+            }
+            wordPending && wordQuery.isNotEmpty() -> runLookup(wordQuery)
+            wordMessage != null -> showWordMessage(wordMessage!!)
+        }
+        if (clueQuery.isNotEmpty()) {
+            b.clue.input.setText(clueQuery)
+            b.clue.input.setSelection(clueQuery.length)
+            if (clueSearched) pendingClue = clueQuery
+        }
+        if (tab == 0) showTab(0) else b.tabs.getTabAt(tab)?.select()
     }
 
     private fun hideKeyboard(v: View) {
@@ -136,6 +189,7 @@ class CompanionSheet : BottomSheetDialogFragment() {
     private fun runLookup(raw: String) {
         val query = raw.trim()
         if (query.isEmpty()) return
+        wordConsumed = false
         hideKeyboard(b.word.input)
         lookupJob?.cancel()
         with(b.word) {
@@ -343,6 +397,7 @@ class CompanionSheet : BottomSheetDialogFragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val added = journal.add(r.toEntry(selectedCategory ?: r.category))
+            wordConsumed = true
             requireContext().toast(if (added) R.string.saved else R.string.already_saved)
         }
     }
@@ -355,6 +410,8 @@ class CompanionSheet : BottomSheetDialogFragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val existing = journal.findByTerm(r.term)
+            // Either way the term is now in the journal, so it needn't come back on reopen.
+            wordConsumed = true
             if (existing?.synced == true) {
                 requireContext().toast(R.string.already_synced)
                 return@launch
@@ -715,6 +772,26 @@ class CompanionSheet : BottomSheetDialogFragment() {
     private fun color(res: Int) = ContextCompat.getColor(requireContext(), res)
 
     // endregion
+
+    /** Lives for the app process, so it survives the sheet being dismissed and reopened. */
+    private object HintMemory {
+        var tab = 0
+        var wordQuery = ""
+        var wordResult: LookupResult? = null
+        var wordCategory: String? = null
+        var wordMessage: String? = null
+        var wordPending = false
+        var clueQuery = ""
+        var clueSearched = false
+
+        fun clearWord() {
+            wordQuery = ""
+            wordResult = null
+            wordCategory = null
+            wordMessage = null
+            wordPending = false
+        }
+    }
 
     companion object {
         const val TAG = "companion"

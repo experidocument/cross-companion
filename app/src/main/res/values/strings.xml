@@ -20,8 +20,8 @@
     <string name="tab_clue">Clue</string>
     <string name="tab_journal">Journal</string>
 
-    <string name="word_hint">Look up a word, name or idiom</string>
-    <string name="clue_hint">Type a crossword clue</string>
+    <string name="word_hint">A word, phrase, name or idiom</string>
+    <string name="clue_hint">Clue that\'s got you stumped</string>
     <string name="search">Search</string>
     <string name="save_to_journal">Save to journal</string>
     <string name="sync_to_doc">Sync to Doc</string>
